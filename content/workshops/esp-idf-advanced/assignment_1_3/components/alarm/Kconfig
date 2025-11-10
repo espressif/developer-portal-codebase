@@ -1,0 +1,17 @@
+menu "Alarm Component Configuration"
+
+    config ALARM_THRESHOLD_PERCENT
+        int "Alarm threshold percent"
+        default 2
+        range 0 100
+        help
+            Set the threshold percent for the alarm (e.g., 2 for 2% chance).
+
+    config ALARM_REFRESH_INTERVAL_MS
+        int "Alarm refresh interval (ms)"
+        default 1000
+        range 1 60000
+        help
+            Set the interval in milliseconds to reevaluate the alarm.
+
+endmenu
