@@ -1,0 +1,19 @@
+menu "Cloud MQTT Configuration"
+
+    config BROKER_URL
+        string "Broker URL"
+        default "mqtt://test.mosquitto.org/"
+        help
+            URL of the broker to connect to
+    config TEMPERATURE_CHANNEL
+        string "MQTT channel for publishing the temperature"
+        default "/sensor/temperature"
+        help
+            The channel in the mqtt broker where the temperature is published
+    config ALARM_CHANNEL
+        string "MQTT channel for publishing the alarm"
+        default "/sensor/alarm"
+        help
+            The channel in the mqtt broker where the alarm is published
+
+endmenu
