@@ -5,3 +5,68 @@ resources
 .hugo_build.lock
 .vscode
 .idea
+
+# ESP-IDF Build System
+build/
+build_*_*/
+sdkconfig
+sdkconfig.old
+sdkconfig.defaults.* 
+
+# ESP-IDF Component Manager
+dependencies.lock
+managed_components/
+
+# ESP-IDF Test and Coverage
+TEST_LOGS/
+build_summary_*.xml
+*.gcda
+*.gcno
+coverage.info
+coverage_report/
+pytest-embedded/
+pytest_embedded_log/
+app_info_*.txt
+size_info*.txt
+XUNIT_RESULT*.xml
+.manifest_sha
+
+# Editor and IDE files
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+cmake-build-*/
+
+# Python
+*.pyc
+__pycache__/
+.mypy_cache
+flake8_output.txt
+
+# Clang/LSP
+.clangd
+.cache/
+
+# GTags
+GTAGS
+GRTAGS
+GPATH
+
+# Emacs
+.dir-locals.el
+*~
+.#*
+\#*#
+
+# Eclipse
+.settings
+
+# Object and binary files
+*.o
+*.bin
+*.elf
+
+# Documentation builds
+docs/_build/
+docs/doxygen_sqlite3.db
