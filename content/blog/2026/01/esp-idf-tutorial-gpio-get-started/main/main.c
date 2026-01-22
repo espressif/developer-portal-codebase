@@ -11,7 +11,7 @@ void app_main(void)
 
     ESP_LOGI(TAG,"** GPIO get started tutorial ** ");
     gpio_set_direction(LED_GPIO,GPIO_MODE_OUTPUT);
-
+    gpio_dump_io_configuration(stdout, SOC_GPIO_VALID_GPIO_MASK);
     uint32_t led_state = 0;
 
     while (1) {
