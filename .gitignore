@@ -109,3 +109,6 @@ XUNIT_RESULT*.xml
 # Vale
 .vale/styles/*
 
+# sdkconfig files
+sdkconfig
+sdkconfig.old
