@@ -1,0 +1,16 @@
+component_mapping_regexes = [
+    "/components/(.+)/",
+    "/common_components/(.+)/",
+]
+
+component_ignored_file_extensions = [
+    ".md",
+    ".rst",
+    ".yaml",
+    ".yml",
+    ".py",
+]
+
+built_app_list_filepatterns = [
+    "app_info_*.txt",   # collect_app_info_filename
+]
