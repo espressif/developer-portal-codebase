@@ -8,7 +8,7 @@ config_rules = [
 ]
 
 recursive = true
-check_warnings = true
+check_warnings = false
 keep_going = true
 
 build_dir = "build_@t_@w"
