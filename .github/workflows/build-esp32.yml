@@ -1,0 +1,38 @@
+name: Build Target ESP32
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        idf_ver: ["release-v5.5"]
+        path:
+          - "content/blog/component-introduction-button/"
+          - "content/workshops/"
+        target: ["esp32"]
+    
+    runs-on: ubuntu-24.04
+    container: espressif/idf:${{ matrix.idf_ver }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          . ${IDF_PATH}/export.sh
+          pip install -U idf-ci
+      
+      - name: Build projects
+        shell: bash
+        run: |
+          . ${IDF_PATH}/export.sh
+          idf-build-apps build -p ${{ matrix.path }} --target ${{ matrix.target }}
