@@ -42,6 +42,18 @@ The `README.md` file in each content folder should contain configuration options
     # Corresponding path in this repo
     content/ + blog/2025/09/espressif_logging/
     ```
+4. For ESP-IDF projects, build and flash the project:
+    ```sh
+    # Set the target chip (e.g., esp32, esp32s3, esp32c3, esp32c6)
+    idf.py set-target <chip_name>
+    
+    # Build the project
+    idf.py build
+    
+    # Flash to the device and open serial monitor
+    idf.py -p <PORT> flash monitor
+    ```
+    > **Note:** Ensure you have [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/) installed and configured before building ESP-IDF projects.
 
 
 ## Future work
