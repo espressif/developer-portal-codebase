@@ -1,7 +1,5 @@
 #include <stdio.h>
-#include <inttypes.h>
 #include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "esp_log.h"
 #include "iot_button.h"
 #include "button_gpio.h"
@@ -15,21 +13,29 @@ static const char *TAG = "BUTTON";
 // Callback functions for button events
 static void button_single_click_event_cb(void *arg, void *data)
 {
+    (void)arg;
+    (void)data;
     ESP_LOGI(TAG, "Button single click!");
 }
 
 static void button_double_click_event_cb(void *arg, void *data)
 {
+    (void)arg;
+    (void)data;
     ESP_LOGI(TAG, "Button double click!");
 }
 
 static void button_long_press_event_cb(void *arg, void *data)
 {
+    (void)arg;
+    (void)data;
     ESP_LOGI(TAG, "Button long press!");
 }
 
 static void button_repeat_event_cb(void *arg, void *data)
 {
+    (void)arg;
+    (void)data;
     ESP_LOGI(TAG, "Button press repeat!");
 }
 
@@ -51,6 +57,7 @@ void app_main(void)
     button_handle_t btn;
     // Create a new button device
     esp_err_t ret = iot_button_new_gpio_device(&btn_cfg, &btn_gpio_cfg, &btn);
+    ESP_ERROR_CHECK(ret);
 
     // Register callback for button press
     ret = iot_button_register_cb(btn, BUTTON_SINGLE_CLICK, NULL, button_single_click_event_cb, NULL);
