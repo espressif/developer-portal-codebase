@@ -20,9 +20,10 @@ Before flashing, download required dependencies:
 ```bash
 go mod download tinygo.org/x/espradio
 go mod download tinygo.org/x/drivers
+go mod download tinygo.org/x/espradio/netlink
 ```
 
-This ensures the Wi-Fi radio and network driver packages (including netlink) are available for TinyGo.
+This ensures the Wi-Fi radio, network driver, and netlink packages are available for TinyGo.
 
 ## Examples
 

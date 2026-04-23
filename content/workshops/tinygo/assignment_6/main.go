@@ -9,7 +9,6 @@ import (
 	"tinygo.org/x/drivers/netdev"
 	nl "tinygo.org/x/drivers/netlink"
 	link "tinygo.org/x/espradio/netlink"
-	"tinygo.org/x/espradio"
 )
 
 var ssid string
@@ -27,29 +26,14 @@ func main() {
 
 	time.Sleep(2 * time.Second)
 
-	// Initialize espradio radio
-	err := espradio.Enable(espradio.Config{})
-	if err != nil {
-		serial.Write([]byte("Radio enable failed: "))
-		serial.Write([]byte(err.Error()))
-		serial.Write([]byte("\r\n"))
-		return
+	// Connect to Wi-Fi with larger arena pool for HTTP
+	radioLink := link.Esplink{
+		ArenaPoolSize: 48 * 1024, // Larger pool for HTTP connections
 	}
-
-	err = espradio.Start()
-	if err != nil {
-		serial.Write([]byte("Radio start failed: "))
-		serial.Write([]byte(err.Error()))
-		serial.Write([]byte("\r\n"))
-		return
-	}
-
-	// Connect to Wi-Fi
-	radioLink := link.Esplink{}
 	netdev.UseNetdev(&radioLink)
 
 	serial.Write([]byte("Connecting to Wi-Fi...\r\n"))
-	err = radioLink.NetConnect(&nl.ConnectParams{
+	err := radioLink.NetConnect(&nl.ConnectParams{
 		Ssid:       ssid,
 		Passphrase: password,
 	})
@@ -66,8 +50,9 @@ func main() {
 
 	// Get IP address
 	addr, _ := radioLink.Addr()
+	host := addr.String()
 	serial.Write([]byte("Server: http://"))
-	serial.Write([]byte(addr.String()))
+	serial.Write([]byte(host))
 	serial.Write([]byte(":8080\r\n"))
 
 	// Setup HTTP routes
@@ -76,9 +61,9 @@ func main() {
 	http.Handle("/led/off", logRequest(ledOff))
 	http.Handle("/status", logRequest(status))
 
-	// Start server
+	// Start server with explicit IP address
 	serial.Write([]byte("Starting server...\r\n"))
-	err = http.ListenAndServe(":8080", nil)
+	err = http.ListenAndServe(host+":8080", nil)
 	if err != nil {
 		serial.Write([]byte("Server error: "))
 		serial.Write([]byte(err.Error()))

@@ -10,31 +10,47 @@ This assignment demonstrates HTTP server on ESP32-C3/ESP32-S3. Examples include:
 
 ## Board Support
 
-- **ESP32-C3**: m5stack-stampc3 target
+- **ESP32-C3**: esp32c3-generic target
 - **ESP32-S3**: esp32s3-generic target
 - **NOT supported**: ESP32 (original)
 
-## Build Instructions
+## Prerequisites
 
-### ESP32-C3
+Before flashing, download required dependencies:
+
 ```bash
-tinygo flash -target m5stack-stampc3 \
-  -ldflags="-X main.ssid=YourSSID -X main.password=YourPassword" .
+go mod download tinygo.org/x/espradio
+go mod download tinygo.org/x/drivers
+go mod download tinygo.org/x/espradio/netlink
 ```
 
-### ESP32-S3
-```bash
-tinygo flash -target esp32s3-generic \
-  -ldflags="-X main.ssid=YourSSID -X main.password=YourPassword" .
-```
+This ensures the Wi-Fi radio, network driver, and netlink packages are available for TinyGo.
 
 ## Examples
 
-### main.go
-Basic HTTP server with LED control endpoints. Serves HTML interface with buttons.
+Each example is a complete program.
 
-### sensor_server.go
-Advanced server with accelerometer data. Real-time sensor readings over HTTP.
+**Wi-Fi credentials for this workshop:**
+- SSID: `tinygo`
+- Password: `gophercamp`
+
+### 1. HTTP LED Control Server (main.go)
+
+HTTP server with web interface to control LED. Serves HTML page with buttons and JSON status endpoint.
+
+**ESP32-C3:**
+```bash
+tinygo flash -target esp32c3-generic \
+  -ldflags="-X main.ssid=tinygo -X main.password=gophercamp" \
+  main.go
+```
+
+**ESP32-S3:**
+```bash
+tinygo flash -target esp32s3-generic \
+  -ldflags="-X main.ssid=tinygo -X main.password=gophercamp" \
+  main.go
+```
 
 ## Requirements
 
