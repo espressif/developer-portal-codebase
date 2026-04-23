@@ -3,8 +3,8 @@ module workshop-tinygo-assignment-5
 go 1.26.0
 
 require (
-	tinygo.org/x/espradio v0.27.0
-	tinygo.org/x/drivers v0.27.0
-	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
-	golang.org/x/sys v0.15.0
+	tinygo.org/x/drivers v0.35.0
+	tinygo.org/x/espradio v0.1.0
 )
+
+require github.com/soypat/lneto v0.1.0 // indirect

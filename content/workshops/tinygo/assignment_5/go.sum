@@ -1,0 +1,6 @@
+github.com/soypat/lneto v0.1.0 h1:VAHCJ33hvC3wDqhM0Vm7w0k6vwNsOCAsQ8XTrXJpS7I=
+github.com/soypat/lneto v0.1.0/go.mod h1:g/8Lk+hIsMZydyWDJjK2YfsCuG6jA5mWCO6U+4S7w1U=
+tinygo.org/x/drivers v0.35.0 h1:cTK36tsI/S4Mg3hCPH0MBjV/ta7XKQ+wpvch4mVqgsE=
+tinygo.org/x/drivers v0.35.0/go.mod h1:DQgKyHkB4G6IEOKVTAjApbKnWGwESN91EVJO+nMOE9Y=
+tinygo.org/x/espradio v0.1.0 h1:3ZKPtfDqHEnJCmXmalNJd+6p65BEJn27XemyArVszC8=
+tinygo.org/x/espradio v0.1.0/go.mod h1:/RIGtWUPZSpQElnGABeQfT1WtqWyhNpsuHB8rQZlzY4=

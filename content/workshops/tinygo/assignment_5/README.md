@@ -9,34 +9,78 @@ This assignment demonstrates Wi-Fi connectivity on ESP32-C3/ESP32-S3 using the e
 
 ## Board Support
 
-- **ESP32-C3**: m5stack-stampc3 target
+- **ESP32-C3**: esp32c3-generic target
 - **ESP32-S3**: esp32s3-generic target
 - **NOT supported**: ESP32 (original)
 
-## Build Instructions
+## Prerequisites
 
-### ESP32-C3
+Before flashing, download required dependencies:
+
 ```bash
-tinygo flash -target m5stack-stampc3 \
-  -ldflags="-X main.ssid=YourSSID -X main.password=YourPassword" .
+go mod download tinygo.org/x/espradio
+go mod download tinygo.org/x/drivers
 ```
 
-### ESP32-S3
-```bash
-tinygo flash -target esp32s3-generic \
-  -ldflags="-X main.ssid=YourSSID -X main.password=YourPassword" .
-```
+This ensures the Wi-Fi radio and network driver packages (including netlink) are available for TinyGo.
 
 ## Examples
 
-### scan.go
-Wi-Fi network scanner. Lists all available networks with SSID and signal strength.
+Each example is a complete program. Build by specifying the source file.
 
-### connect.go
-Wi-Fi connection example. Connects to specified network and displays IP address.
+**Wi-Fi credentials for this workshop:**
+- SSID: `tinygo`
+- Password: `gophercamp`
 
-### http_client.go
-HTTP client example. Fetches webpage and displays response.
+### 1. Wi-Fi Network Scanner (scan.go)
+
+Scans for available Wi-Fi networks and displays SSID and signal strength. No credentials required.
+
+**ESP32-C3:**
+```bash
+tinygo flash -target esp32c3-generic scan.go
+```
+
+**ESP32-S3:**
+```bash
+tinygo flash -target esp32s3-generic scan.go
+```
+
+### 2. Wi-Fi Connection (connect.go)
+
+Connects to Wi-Fi network and displays assigned IP address.
+
+**ESP32-C3:**
+```bash
+tinygo flash -target esp32c3-generic \
+  -ldflags="-X main.ssid=tinygo -X main.password=gophercamp" \
+  connect.go
+```
+
+**ESP32-S3:**
+```bash
+tinygo flash -target esp32s3-generic \
+  -ldflags="-X main.ssid=tinygo -X main.password=gophercamp" \
+  connect.go
+```
+
+### 3. HTTP Client (http_client.go)
+
+Fetches a webpage via HTTP and displays the response.
+
+**ESP32-C3:**
+```bash
+tinygo flash -target esp32c3-generic \
+  -ldflags="-X main.ssid=tinygo -X main.password=gophercamp" \
+  http_client.go
+```
+
+**ESP32-S3:**
+```bash
+tinygo flash -target esp32s3-generic \
+  -ldflags="-X main.ssid=tinygo -X main.password=gophercamp" \
+  http_client.go
+```
 
 ## Requirements
 

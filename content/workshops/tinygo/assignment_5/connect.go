@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"tinygo.org/x/drivers/netdev"
+	nl "tinygo.org/x/drivers/netlink"
 	link "tinygo.org/x/espradio/netlink"
-	"tinygo.org/x/espradio"
 )
 
 var ssid string
@@ -19,23 +19,6 @@ func main() {
 
 	time.Sleep(2 * time.Second)
 
-	// Initialize espradio radio
-	err := espradio.Enable(espradio.Config{})
-	if err != nil {
-		serial.Write([]byte("Radio enable failed: "))
-		serial.Write([]byte(err.Error()))
-		serial.Write([]byte("\r\n"))
-		return
-	}
-
-	err = espradio.Start()
-	if err != nil {
-		serial.Write([]byte("Radio start failed: "))
-		serial.Write([]byte(err.Error()))
-		serial.Write([]byte("\r\n"))
-		return
-	}
-
 	// Initialize radio link for netdev
 	radioLink := link.Esplink{}
 	netdev.UseNetdev(&radioLink)
@@ -45,7 +28,7 @@ func main() {
 	serial.Write([]byte(ssid))
 	serial.Write([]byte("...\r\n"))
 
-	err = radioLink.NetConnect(&link.ConnectParams{
+	err := radioLink.NetConnect(&nl.ConnectParams{
 		Ssid:       ssid,
 		Passphrase: password,
 	})

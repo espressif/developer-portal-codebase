@@ -1,14 +1,13 @@
 package main
 
 import (
-	"io"
 	"machine"
 	"net/http"
 	"time"
 
 	"tinygo.org/x/drivers/netdev"
+	nl "tinygo.org/x/drivers/netlink"
 	link "tinygo.org/x/espradio/netlink"
-	"tinygo.org/x/espradio"
 )
 
 var ssid string
@@ -21,29 +20,12 @@ func main() {
 
 	time.Sleep(2 * time.Second)
 
-	// Initialize espradio radio
-	err := espradio.Enable(espradio.Config{})
-	if err != nil {
-		serial.Write([]byte("Radio enable failed: "))
-		serial.Write([]byte(err.Error()))
-		serial.Write([]byte("\r\n"))
-		return
-	}
-
-	err = espradio.Start()
-	if err != nil {
-		serial.Write([]byte("Radio start failed: "))
-		serial.Write([]byte(err.Error()))
-		serial.Write([]byte("\r\n"))
-		return
-	}
-
 	// Connect to Wi-Fi
 	radioLink := link.Esplink{}
 	netdev.UseNetdev(&radioLink)
 
 	serial.Write([]byte("Connecting to Wi-Fi...\r\n"))
-	err = radioLink.NetConnect(&link.ConnectParams{
+	err := radioLink.NetConnect(&nl.ConnectParams{
 		Ssid:       ssid,
 		Passphrase: password,
 	})
@@ -58,10 +40,10 @@ func main() {
 	// Wait for DHCP
 	time.Sleep(5 * time.Second)
 
-	// Fetch webpage
-	serial.Write([]byte("Fetching http://example.com...\r\n"))
+	// Fetch webpage from local gateway
+	serial.Write([]byte("Fetching http://192.168.4.1...\r\n"))
 
-	resp, err := http.Get("http://example.com")
+	resp, err := http.Get("http://192.168.4.1")
 	if err != nil {
 		serial.Write([]byte("HTTP GET failed: "))
 		serial.Write([]byte(err.Error()))
