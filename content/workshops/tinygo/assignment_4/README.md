@@ -17,6 +17,13 @@ This assignment demonstrates I2C sensor reading and ADC input on ESP32 microcont
 
 ## Hardware Configuration
 
+### I2C Bus Connection (ESP32-C3 with MPU-6050)
+
+| Signal | GPIO  |
+|--------|-------|
+| SDA    | GPIO4 |
+| SCL    | GPIO5 |
+
 ### I2C Bus Connection (esp-rust-board standard)
 
 | Signal | GPIO  |
@@ -44,27 +51,38 @@ This assignment demonstrates I2C sensor reading and ADC input on ESP32 microcont
 
 | Peripheral          | Part Number  | I2C Address | Implementation |
 |---------------------|--------------|-------------|-----------------|
+| IMU/Accelerometer   | MPU-6050     | 0x68        | Raw I2C commands |
 | IMU/Accelerometer   | ICM-42670-P  | 0x68        | Raw I2C commands |
 | IMU/Accelerometer   | BMI160       | 0x68        | Raw I2C commands |
 | Temp & Humidity     | SHTC3        | 0x70        | Raw I2C commands (see comments) |
 
-**Note:** Examples use raw I2C commands to read ICM-42670-P IMU. No TinyGo driver exists for ICM-42670-P, so we use direct I2C register access. This approach works with any I2C IMU sensor.
-
-## Prerequisites
-
-Before flashing, download required dependencies:
-
-```bash
-go mod download tinygo.org/x/drivers
-```
-
-This ensures the I2C driver package is available for TinyGo.
+**Note:** Examples use raw I2C commands via machine.I2C for maximum compatibility. No external driver packages required. This approach works with any I2C sensor.
 
 ## Examples
 
 Each example is a complete program. Build by specifying the source file.
 
-### 1. Basic Sensor Reading (main.go)
+### 1. MPU-6050 Accelerometer (mpu6050.go)
+
+Reads MPU-6050 accelerometer data via raw I2C on ESP32-C3. Demonstrates I2C initialization, sensor identification via WHO_AM_I register, sensor wake-up, and reading accelerometer data. Includes validation to verify sensor communication.
+
+**Hardware:**
+- MPU-6050 sensor
+- SDA connected to GPIO4
+- SCL connected to GPIO5
+- I2C address: 0x68
+
+**ESP32-C3:**
+```bash
+tinygo flash -target esp32c3-generic mpu6050.go
+```
+
+**Expected Output:**
+- WHO_AM_I: 0x68 (sensor validation)
+- Accelerometer X, Y, Z values in g-force
+- 1 reading per second
+
+### 2. Basic Sensor Reading (main.go)
 
 Reads ICM-42670-P accelerometer data via raw I2C and outputs to serial monitor. Demonstrates I2C initialization, sensor wake-up, and reading accelerometer registers. Works with any I2C IMU sensor.
 
@@ -83,7 +101,7 @@ tinygo flash -target esp32c3-generic main.go
 tinygo flash -target esp32s3-generic main.go
 ```
 
-### 2. Motion Detection (motion.go)
+### 3. Motion Detection (motion.go)
 
 Simple motion detection with threshold-based triggering using raw I2C. Detects significant movement changes by comparing accelerometer readings.
 
@@ -102,7 +120,7 @@ tinygo flash -target esp32c3-generic motion.go
 tinygo flash -target esp32s3-generic motion.go
 ```
 
-### 3. Joystick ADC Reader (joystick.go)
+### 4. Joystick ADC Reader (joystick.go)
 
 Reads joystick position using ADC pins. Demonstrates ADC configuration, oversampling for stable readings, deadzone handling, and value normalization. Outputs raw values (0-65520), normalized values (0.0-1.0), and directional vectors (-1.0 to 1.0). Uses GPIO4/GPIO6 to avoid XTAL constraints on GPIO15/16.
 
@@ -249,9 +267,10 @@ tinygo flash -target m5stack-core2 display.go
 
 - TinyGo 0.41+
 - Go 1.26+
-- ESP32 board with I2C sensor (BMI260, ICM-42670-P, or compatible)
+- ESP32 board with I2C sensor (MPU-6050, ICM-42670-P, BMI160, or compatible)
 - USB-C cable
 - For display.go: M5Stack Core2 with built-in LCD
+- For joystick.go: ESP32-S3 with joystick module (optional)
 
 ## Customizing for Your Board
 
@@ -267,10 +286,19 @@ const (
 )
 ```
 
+For MPU-6050 on ESP32-C3 (mpu6050.go):
+```go
+const (
+    I2C_SDA = machine.GPIO4   // SDA pin
+    I2C_SCL = machine.GPIO5   // SCL pin
+    MPU6050_ADDR = 0x68       // I2C address
+)
+```
+
 For different I2C sensors:
-1. Update the IMU_I2C_ADDR constant
+1. Update the I2C address constant
 2. Modify register addresses if your sensor uses different registers
-3. Adjust the scaling factor (currently 2048 LSB/g for ICM-42670-P)
+3. Adjust the scaling factor (currently 2048 LSB/g for ICM-42670-P, 16384 LSB/g for MPU-6050)
 4. Refer to your sensor's datasheet for register map and configuration
 
 ### ADC Sensors
