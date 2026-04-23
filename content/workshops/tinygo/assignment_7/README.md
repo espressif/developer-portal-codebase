@@ -11,33 +11,53 @@ This assignment explores edge AI concepts with pure Go implementations. Examples
 ## Board Support
 
 - **M5Stack Core2** (ESP32 with built-in BMI260 accelerometer)
-- Any ESP32 board with external accelerometer
-
-## Build Instructions
-
-```bash
-tinygo flash -target m5stack-core2 .
-```
+- Any ESP32 board with external I2C accelerometer
 
 ## Examples
 
-### threshold.go
-Threshold-based gesture detection. Classifies shake, wave, and idle states.
+Each example is a complete program. Build by specifying the source file.
 
-### pattern.go
-Pattern recognition with moving average smoothing and peak detection.
+### 1. Threshold Gesture Detection (threshold.go)
 
-### decision_tree.go
+Simple gesture detection using acceleration thresholds. Classifies shake, wave, and idle states.
+
+**M5Stack Core2:**
+```bash
+tinygo flash -target m5stack-core2 threshold.go
+```
+
+### 2. Pattern Recognition (pattern.go)
+
+Pattern recognition with moving average smoothing and peak detection. Demonstrates sensor data filtering.
+
+**M5Stack Core2:**
+```bash
+tinygo flash -target m5stack-core2 pattern.go
+```
+
+### 3. Decision Tree Classifier (decision_tree.go)
+
 Decision tree for activity classification (running, walking, sitting, stationary).
 
-### knn.go
+**M5Stack Core2:**
+```bash
+tinygo flash -target m5stack-core2 decision_tree.go
+```
+
+### 4. k-Nearest Neighbors (knn.go)
+
 Simple k-NN implementation for small datasets.
+
+**M5Stack Core2:**
+```bash
+tinygo flash -target m5stack-core2 knn.go
+```
 
 ## Requirements
 
 - TinyGo 0.41+
 - Go 1.26+
-- ESP32 board with accelerometer
+- ESP32 board with accelerometer (BMI260 or compatible I2C)
 - USB-C cable
 
 ## Related Article
