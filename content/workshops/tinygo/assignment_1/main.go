@@ -1,3 +1,9 @@
-module workshop-tinygo-assignment-1
+package main
 
-go 1.26.0
+import "fmt"
+
+func main() {
+	for i := 0; i < 5; i++ {
+		fmt.Println("Hello from TinyGo!", i)
+	}
+}

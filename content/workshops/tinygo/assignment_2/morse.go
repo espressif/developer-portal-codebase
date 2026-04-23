@@ -6,16 +6,16 @@ import (
 )
 
 func shortBlink() {
-	led.Low()
-	time.Sleep(time.Millisecond * 200)
 	led.High()
+	time.Sleep(time.Millisecond * 200)
+	led.Low()
 	time.Sleep(time.Millisecond * 200)
 }
 
 func longBlink() {
-	led.Low()
-	time.Sleep(time.Millisecond * 600)
 	led.High()
+	time.Sleep(time.Millisecond * 600)
+	led.Low()
 	time.Sleep(time.Millisecond * 200)
 }
 
@@ -40,6 +40,11 @@ func main() {
 		longBlink()
 		longBlink()
 		time.Sleep(time.Millisecond * 400)
+
+		// S: ***
+		shortBlink()
+		shortBlink()
+		shortBlink()
 
 		time.Sleep(time.Second * 2) // Pause between SOS
 	}

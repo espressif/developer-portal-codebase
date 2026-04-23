@@ -15,9 +15,12 @@ func main() {
 
 	// NeoPixel driver
 	neo := ws2812.New(led)
-	neo.SetBrightness(51) // 20% brightness - RGB LEDs are extremely bright!
 
-	colors := []color.RGBA{
+	// Brightness: 0-255 scale. RGB LEDs are extremely bright, so using 20%
+	brightness := uint8(51)
+
+	// Base colors at full brightness
+	baseColors := []color.RGBA{
 		{255, 0, 0, 255},     // Red
 		{0, 255, 0, 255},     // Green
 		{0, 0, 255, 255},     // Blue
@@ -25,6 +28,17 @@ func main() {
 		{0, 255, 255, 255},   // Cyan
 		{255, 0, 255, 255},   // Magenta
 		{255, 255, 255, 255}, // White
+	}
+
+	// Apply brightness scaling
+	colors := make([]color.RGBA, len(baseColors))
+	for i, c := range baseColors {
+		colors[i] = color.RGBA{
+			R: uint8(uint16(c.R) * uint16(brightness) / 255),
+			G: uint8(uint16(c.G) * uint16(brightness) / 255),
+			B: uint8(uint16(c.B) * uint16(brightness) / 255),
+			A: 255,
+		}
 	}
 
 	for {
