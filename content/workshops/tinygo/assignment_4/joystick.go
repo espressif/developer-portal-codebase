@@ -6,10 +6,9 @@ import (
 )
 
 // GPIO Configuration for Joystick ADC pins
-// GPIO15/16 used by XTAL_32P/XTAL_32N on ESP32-S3, causing ADC to be stuck
-// Using GPIO4 (ADC1_CH0) for single-axis test instead
 const (
 	JOYSTICK_X_PIN = machine.ADC4 // X-axis - GPIO4 (ADC1_CH0)
+	JOYSTICK_Y_PIN = machine.ADC6 // Y-axis - GPIO6 (ADC1_CH2)
 )
 
 // ADC Configuration
@@ -29,35 +28,45 @@ func main() {
 	serial.Write([]byte("Joystick ADC Reader\r\n"))
 	serial.Write([]byte("====================\r\n\r\n"))
 
-	// Initialize ADC pin
+	// Initialize ADC pins
 	joystickX := machine.ADC{Pin: JOYSTICK_X_PIN}
 	joystickX.Configure(machine.ADCConfig{})
+
+	joystickY := machine.ADC{Pin: JOYSTICK_Y_PIN}
+	joystickY.Configure(machine.ADCConfig{})
 
 	// Allow ADC to stabilize
 	time.Sleep(time.Millisecond * 100)
 
-	serial.Write([]byte("Reading joystick X-axis on GPIO4...\r\n\r\n"))
-	serial.Write([]byte("Format: X=[0-65520] X=[0.0-1.0]\r\n"))
+	serial.Write([]byte("Reading joystick on GPIO4 (X) and GPIO6 (Y)...\r\n\r\n"))
+	serial.Write([]byte("Format: X=[0-65520] Y=[0-65520] | X=[0.0-1.0] Y=[0.0-1.0]\r\n"))
 	serial.Write([]byte("Center: ~32760 (~0.5) Deadzone: ±5000\r\n\r\n"))
 
 	for {
-		// Read raw ADC value (0-65520)
+		// Read raw ADC values (0-65520)
 		rawX := readADC(joystickX)
+		rawY := readADC(joystickY)
 
 		// Diagnostic: Check if value is stuck (possible connection issue)
 		// Value around 30400 suggests ADC pin constraint or not connected
 		if rawX > 30000 && rawX < 31000 {
-			serial.Write([]byte("WARNING: ADC stuck at ~30400 - Check GPIO4 connection\r\n"))
+			serial.Write([]byte("WARNING: X ADC stuck at ~30400 - Check GPIO4 connection\r\n"))
+		}
+		if rawY > 30000 && rawY < 31000 {
+			serial.Write([]byte("WARNING: Y ADC stuck at ~30400 - Check GPIO6 connection\r\n"))
 		}
 
 		// Apply deadzone (center ± 5000)
 		inDeadzoneX := rawX > (JOYSTICK_CENTER-JOYSTICK_DEADZONE) && rawX < (JOYSTICK_CENTER+JOYSTICK_DEADZONE)
+		inDeadzoneY := rawY > (JOYSTICK_CENTER-JOYSTICK_DEADZONE) && rawY < (JOYSTICK_CENTER+JOYSTICK_DEADZONE)
 
 		// Convert to normalized values (0.0-1.0)
 		normX := float32(rawX) / float32(ADC_RESOLUTION)
+		normY := float32(rawY) / float32(ADC_RESOLUTION)
 
 		// Convert to joystick direction (-1.0 to 1.0, center at 0)
 		dirX := (normX - 0.5) * 2.0
+		dirY := (normY - 0.5) * 2.0
 
 		// Clamp to valid range
 		if dirX < -1.0 {
@@ -65,18 +74,29 @@ func main() {
 		} else if dirX > 1.0 {
 			dirX = 1.0
 		}
+		if dirY < -1.0 {
+			dirY = -1.0
+		} else if dirY > 1.0 {
+			dirY = 1.0
+		}
 
 		// Output to serial
 		serial.Write([]byte("X="))
 		printInt(serial, rawX)
+		serial.Write([]byte(" Y="))
+		printInt(serial, rawY)
 		serial.Write([]byte(" | X="))
 		printFloat(serial, normX)
+		serial.Write([]byte(" Y="))
+		printFloat(serial, normY)
 		serial.Write([]byte(" | Dir: ["))
 		printFloat(serial, dirX)
+		serial.Write([]byte(","))
+		printFloat(serial, dirY)
 		serial.Write([]byte("]"))
 
 		// Indicate deadzone position
-		if inDeadzoneX {
+		if inDeadzoneX && inDeadzoneY {
 			serial.Write([]byte(" [CENTER]"))
 		}
 
