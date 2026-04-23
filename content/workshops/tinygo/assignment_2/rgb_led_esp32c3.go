@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	// ESP32-C3: RGB LED on GPIO7
+	// ESP32-C3: RGB LED on GPIO2
 	led := machine.GPIO2
 	led.Configure(machine.PinConfig{Mode: machine.PinOutput})
 

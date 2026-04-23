@@ -14,7 +14,7 @@ func main() {
 
 	// Configure LED pin for your board:
 	// ESP32/ESP32-S3: GPIO2
-	// ESP32-C3: GPIO8
+	// ESP32-C3: GPIO2
 	led := machine.GPIO2
 	led.Configure(machine.PinConfig{Mode: machine.PinOutput})
 
@@ -22,11 +22,11 @@ func main() {
 
 	for {
 		serial.Write([]byte("LED ON\r\n"))
-		led.Low()
+		led.High()
 		time.Sleep(time.Millisecond * 500)
 
 		serial.Write([]byte("LED OFF\r\n"))
-		led.High()
+		led.Low()
 		time.Sleep(time.Millisecond * 500)
 	}
 }
