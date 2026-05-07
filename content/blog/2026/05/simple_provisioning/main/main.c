@@ -28,14 +28,15 @@ void app_main(void)
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    /* Configure and start provisioning */
-    provisioning_conf_t config = {
-        .wifi_event_group = xEventGroupCreate(),
+    /* Start provisioning */
+    provisioning_conf_t prov_config = {
+        .pop = "abcd1234",
+        .reset_provisioning = true,
     };
-    ESP_ERROR_CHECK(provisioning_start(&config));
+    ESP_ERROR_CHECK(provisioning_start(&prov_config));
 
-    /* Wait for WiFi connection before entering main loop */
-    xEventGroupWaitBits(config.wifi_event_group, WIFI_CONNECTED_EVENT, true, true, portMAX_DELAY);
+    /* Block until WiFi is connected */
+    ESP_ERROR_CHECK(provisioning_wait_connected(0));
 
     ESP_LOGI(TAG, "WiFi connected! Starting application...");
 
