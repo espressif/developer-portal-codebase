@@ -10,18 +10,18 @@
 
 #include <network_provisioning/manager.h>
 #include <network_provisioning/scheme_softap.h>
-#include "qrcode.h"
 
 static const char *TAG = "app";
 
 const int WIFI_CONNECTED_EVENT = BIT0;
 static EventGroupHandle_t wifi_event_group;
 
-const char *pop = "abcd1234";
-
 #define PROV_QR_VERSION         "v1"
 #define PROV_TRANSPORT_SOFTAP   "softap"
 #define QRCODE_BASE_URL         "https://espressif.github.io/esp-jumpstart/qrcode.html"
+
+#define AP_NAME "PROV_TestProvisioning"
+#define PROOF_OF_POSESSION "abcd1234"
 
 static void network_prov_event_handler(void *arg, esp_event_base_t event_base,
                                        int32_t event_id, void *event_data)
@@ -93,61 +93,10 @@ static void ip_event_handler(void *arg, esp_event_base_t event_base,
     }
 }
 
-static void wifi_init_sta(void)
-{
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_start());
-}
-
-static void get_device_service_name(char *service_name, size_t max)
-{
-    uint8_t eth_mac[6];
-    const char *ssid_prefix = "PROV_";
-    esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
-    snprintf(service_name, max, "%s%02X%02X%02X",
-             ssid_prefix, eth_mac[3], eth_mac[4], eth_mac[5]);
-}
-
-esp_err_t custom_prov_data_handler(uint32_t session_id, const uint8_t *inbuf, ssize_t inlen,
-                                   uint8_t **outbuf, ssize_t *outlen, void *priv_data)
-{
-    if (inbuf) {
-        ESP_LOGI(TAG, "Received data: %.*s", inlen, (char *)inbuf);
-    }
-    char response[] = "SUCCESS";
-    *outbuf = (uint8_t *)strdup(response);
-    if (*outbuf == NULL) {
-        ESP_LOGE(TAG, "System out of memory");
-        return ESP_ERR_NO_MEM;
-    }
-    *outlen = strlen(response) + 1;
-    return ESP_OK;
-}
-
-static void wifi_prov_print_qr(const char *name, const char *transport)
-{
-    if (!name || !transport) {
-        ESP_LOGW(TAG, "Cannot generate QR code payload. Data missing.");
-        return;
-    }
-    char payload[150] = {0};
-
-    snprintf(payload, sizeof(payload), "{\"ver\":\"%s\",\"name\":\"%s\""
-         ",\"pop\":\"%s\",\"transport\":\"%s\"}",
-         PROV_QR_VERSION, name, pop, transport);
-    ESP_LOGI(TAG, "If QR code is not visible, copy paste the below URL in a browser.\n%s?data=%s",
-             QRCODE_BASE_URL, payload);
-}
-
 void app_main(void)
 {
     /* Initialize NVS partition */
-    esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ESP_ERROR_CHECK(nvs_flash_init());
-    }
-    
+    ESP_ERROR_CHECK(nvs_flash_init());
 
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -170,42 +119,21 @@ void app_main(void)
     };
 
     ESP_ERROR_CHECK(network_prov_mgr_init(config));
-    network_prov_mgr_reset_wifi_provisioning();
-    bool provisioned = false;
-    ESP_ERROR_CHECK(network_prov_mgr_is_wifi_provisioned(&provisioned));
 
-    if (!provisioned) {
-        ESP_LOGI(TAG, "Starting provisioning");
+    ESP_LOGI(TAG, "Starting provisioning");
 
-        char service_name[12];
-        get_device_service_name(service_name, sizeof(service_name));
+    /* Security 1 */
+    network_prov_security_t security = NETWORK_PROV_SECURITY_1;
+    network_prov_security1_params_t *sec_params = PROOF_OF_POSESSION;
 
-        /* Security 1 */
-        network_prov_security_t security = NETWORK_PROV_SECURITY_1;
+    ESP_ERROR_CHECK(network_prov_mgr_start_provisioning(security, sec_params, AP_NAME, NULL));
 
-        network_prov_security1_params_t *sec_params = pop;
-
-
-        /* Wi-Fi password for the SoftAP (NULL = open network) */
-        const char *service_key = NULL;
-
-        network_prov_mgr_endpoint_create("custom-data");
-
-        ESP_ERROR_CHECK(network_prov_mgr_start_provisioning(security, sec_params, service_name, service_key));
-
-        network_prov_mgr_endpoint_register("custom-data", custom_prov_data_handler, NULL);
-
-        wifi_prov_print_qr(service_name, PROV_TRANSPORT_SOFTAP);
-    } else {
-        ESP_LOGI(TAG, "Already provisioned, starting Wi-Fi STA");
-        ESP_ERROR_CHECK(network_prov_mgr_deinit());
-        wifi_init_sta();
-    }
+    printf("Copy paste the below URL in a browser.\n%s?data={\"ver\":\"%s\",\"name\":\"%s\",\"PoP\":\"%s\",\"transport\":\"%s\"}\n",
+           QRCODE_BASE_URL, PROV_QR_VERSION, AP_NAME, PROOF_OF_POSESSION, PROV_TRANSPORT_SOFTAP);
 
     xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_EVENT, true, true, portMAX_DELAY);
 
     while (1) {
-        
         ESP_LOGI(TAG, "Hello World!");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
