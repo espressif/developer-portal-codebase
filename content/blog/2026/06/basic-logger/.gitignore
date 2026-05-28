@@ -5,7 +5,8 @@
 
 # Directory metadata
 .directory
-
+output/
+flash_data
 .devcontainer/
 
 # Temporary files

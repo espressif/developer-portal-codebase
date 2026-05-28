@@ -16,3 +16,4 @@ dependencies:
   #   public: true
   espressif/aht20: ^2.0.0
   espressif/i2c_bus: =*
+  joltwallet/littlefs: ^1.22.1
