@@ -104,66 +104,66 @@ void little_fs_init(){
 }
 
 
-// void test_file_operations(){
+void test_file_operations(){
 
-//     ESP_LOGI(TAG, "Opening file");
-//     FILE *f = fopen("/littlefs/hello.txt", "w");
-//     if (f == NULL) {
-//         ESP_LOGE(TAG, "Failed to open file for writing");
-//         return;
-//     }
-//     fprintf(f, "Hello World!\n");
-//     fclose(f);
-//     ESP_LOGI(TAG, "File written");
+    ESP_LOGI(TAG, "Opening file");
+    FILE *f = fopen("/littlefs/hello.txt", "w");
+    if (f == NULL) {
+        ESP_LOGE(TAG, "Failed to open file for writing");
+        return;
+    }
+    fprintf(f, "Hello World!\nThis is a file working\n");
+    fclose(f);
+    ESP_LOGI(TAG, "File written");
 
-//     // Check if destination file exists before renaming
-//     struct stat st;
-//     if (stat("/littlefs/foo.txt", &st) == 0) {
-//         // Delete it if it exists
-//         unlink("/littlefs/foo.txt");
-//     }
+    // Check if destination file exists before renaming
+    struct stat st;
+    if (stat("/littlefs/foo.txt", &st) == 0) {
+        // Delete it if it exists
+        unlink("/littlefs/foo.txt");
+    }
 
-//     // Rename original file
-//     ESP_LOGI(TAG, "Renaming file");
-//     if (rename("/littlefs/hello.txt", "/littlefs/foo.txt") != 0) {
-//         ESP_LOGE(TAG, "Rename failed");
-//         return;
-//     }
+    // Rename original file
+    ESP_LOGI(TAG, "Renaming file");
+    if (rename("/littlefs/hello.txt", "/littlefs/foo.txt") != 0) {
+        ESP_LOGE(TAG, "Rename failed");
+        return;
+    }
 
-//     // Open renamed file for reading
-//     ESP_LOGI(TAG, "Reading file");
-//     f = fopen("/littlefs/foo.txt", "r");
-//     if (f == NULL) {
-//         ESP_LOGE(TAG, "Failed to open file for reading");
-//         return;
-//     }
+    // Open renamed file for reading
+    ESP_LOGI(TAG, "Reading file");
+    f = fopen("/littlefs/foo.txt", "r");
+    if (f == NULL) {
+        ESP_LOGE(TAG, "Failed to open file for reading");
+        return;
+    }
 
-//     char line[128] = {0};
-//     fgets(line, sizeof(line), f);
-//     fclose(f);
-//     // strip newline
-//     char* pos = strpbrk(line, "\r\n");
-//     if (pos) {
-//         *pos = '\0';
-//     }
-//     ESP_LOGI(TAG, "Read from file: '%s'", line);
+    char line[128] = {0};
+    fgets(line, sizeof(line), f);
+    fclose(f);
+    // strip newline
+    char* pos = strpbrk(line, "\r\n");
+    if (pos) {
+        *pos = '\0';
+    }
+    ESP_LOGI(TAG, "Read from file: '%s'", line);
 
-//     ESP_LOGI(TAG, "Reading from flashed filesystem example.txt");
-//     f = fopen("/littlefs/example.txt", "r");
-//     if (f == NULL) {
-//         ESP_LOGE(TAG, "Failed to open file for reading");
-//         return;
-//     }
-//     fgets(line, sizeof(line), f);
-//     fclose(f);
-//     // strip newline
-//     pos = strpbrk(line, "\r\n");
-//     if (pos) {
-//         *pos = '\0';
-//     }
-//     ESP_LOGI(TAG, "Read from file: '%s'", line);
+    ESP_LOGI(TAG, "Reading from flashed filesystem example.txt");
+    f = fopen("/littlefs/example.txt", "r");
+    if (f == NULL) {
+        ESP_LOGE(TAG, "Failed to open file for reading");
+        return;
+    }
+    fgets(line, sizeof(line), f);
+    fclose(f);
+    // strip newline
+    pos = strpbrk(line, "\r\n");
+    if (pos) {
+        *pos = '\0';
+    }
+    ESP_LOGI(TAG, "Read from file: '%s'", line);
 
-// }
+}
 
 void app_main(void) {
     ESP_LOGI(TAG,"Get started\n");
@@ -176,19 +176,46 @@ void app_main(void) {
     test_file_operations();
 
     ESP_ERROR_CHECK(ambient_sensor_init(&aht20_handle, &i2c_bus_handle));
-    
 
     uint32_t temperature_raw, humidity_raw;
     float temperature, humidity;
+    time_t now;
 
-    while(1){
+    int times = 10;
+
+
+    FILE *f_temperature = fopen("/littlefs/temperature.csv", "w");
+    FILE *f_humidity    = fopen("/littlefs/humidity.csv", "w");
+    fprintf(f_temperature,"timestamp,temperature\n");
+    fprintf(f_humidity, "timestamp, humidity\n");
+
+    fclose(f_temperature);
+    fclose(f_humidity);
+
+    while (times > 0) {
+        time(&now);
         aht20_read_temperature_humidity(aht20_handle, &temperature_raw, &temperature, &humidity_raw, &humidity);
         ESP_LOGI(TAG, "%-20s: %2.2f %%", "humidity is", humidity);
         ESP_LOGI(TAG, "%-20s: %2.2f degC", "temperature is", temperature);
+
+        FILE *f_temperature = fopen("/littlefs/temperature.csv", "a");
+        FILE *f_humidity    = fopen("/littlefs/humidity.csv", "a");
+
+        if (f_humidity == NULL || f_temperature == NULL) {
+            ESP_LOGE(TAG, "Failed to open file for writing");
+            return;
+        }
+
+        fprintf(f_temperature, "%lld,%f\n", now, temperature);
+        fprintf(f_humidity, "%lld,%f %%\n", now, humidity);
+
+        fclose(f_temperature);
+        fclose(f_humidity);
+
         vTaskDelay(pdMS_TO_TICKS(1000));
+        times--;
     }
-
-
+    ESP_LOGI(TAG,"Finished, closing...\n");
     // All done, unmount partition and disable LittleFS
     esp_vfs_littlefs_unregister(PARTITION_LABEL);
     ESP_LOGI(TAG, "LittleFS unmounted");
