@@ -75,7 +75,7 @@ esp_err_t ledc_set_duty_cycle(float duty){
     esp_err_t ret = ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, (int) (duty*LEDC_FS));
     if(ret != ESP_OK){
         return ret;
-    }
+    } 
     ret = ledc_update_duty(LEDC_MODE, LEDC_CHANNEL);
     return ret;
 }
