@@ -5,8 +5,13 @@
 #     "paho-mqtt>=2.0",
 # ]
 # ///
-"""Publish a random duty-cycle value (0.1 – 0.9) to the MQTT broker every 5 s."""
+"""Publish duty-cycle values to the MQTT broker.
 
+By default, publishes a random value (0.1 – 0.9) every 5 s.
+Use --set to publish a single specific duty-cycle value and exit.
+"""
+
+import argparse
 import random
 import time
 
@@ -28,6 +33,15 @@ def on_connect(client: mqtt.Client, _userdata, _flags, rc, _properties=None):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--set",
+        type=float,
+        metavar="VALUE",
+        help="Publish a single duty-cycle value (0.0 – 1.0) and exit.",
+    )
+    args = parser.parse_args()
+
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     client.username_pw_set(USERNAME, PASSWORD)
     client.on_connect = on_connect
@@ -37,11 +51,16 @@ def main():
     client.loop_start()
 
     try:
-        while True:
-            value = round(random.uniform(0.1, 0.9), 2)
+        if args.set is not None:
+            value = round(args.set, 2)
             client.publish(TOPIC, str(value), qos=1)
             print(f"Published {value} to {TOPIC}")
-            time.sleep(INTERVAL)
+        else:
+            while True:
+                value = round(random.uniform(0.1, 0.9), 2)
+                client.publish(TOPIC, str(value), qos=1)
+                print(f"Published {value} to {TOPIC}")
+                time.sleep(INTERVAL)
     except KeyboardInterrupt:
         print("\nStopping.")
     finally:

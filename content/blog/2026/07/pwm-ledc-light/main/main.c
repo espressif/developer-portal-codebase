@@ -72,7 +72,6 @@ static void ledc_init(void)
 }
 
 esp_err_t ledc_set_duty_cycle(float duty){
-    printf("duty: %d\n",(int)(duty*LEDC_FS));
     esp_err_t ret = ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, (int) (duty*LEDC_FS));
     if(ret != ESP_OK){
         return ret;
@@ -169,9 +168,22 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
         ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
         break;
 
-    case MQTT_EVENT_DATA:
+    case MQTT_EVENT_DATA: 
         ESP_LOGI(TAG, "MQTT_EVENT_DATA");
-        printf("published %.*s\r\n", event->data_len, event->data);
+        // Null-terminate the payload so we can parse it
+        char buf[64];
+        int len = event->data_len < (int)sizeof(buf) - 1 ? event->data_len : (int)sizeof(buf) - 1;
+        memcpy(buf, event->data, len);
+        buf[len] = '\0';
+
+        char *end;
+        float duty = strtof(buf, &end);
+        if (end != buf && *end == '\0' && duty >= 0.0f && duty <= 1.0f) {
+            ESP_LOGI(TAG, "Setting duty cycle to %.2f", duty);
+            ESP_ERROR_CHECK(ledc_set_duty_cycle(duty));
+        } else {
+            ESP_LOGE(TAG, "Invalid duty value: %s (must be a float between 0 and 1)", buf);
+        }
         break;
 
     case MQTT_EVENT_ERROR:
