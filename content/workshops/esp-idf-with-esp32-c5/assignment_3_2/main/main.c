@@ -3,7 +3,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/semphr.h"
+#include "freertos/event_groups.h"
 
 #include "esp_log.h"
 #include "esp_wifi.h"
@@ -21,8 +21,9 @@
 
 static const char *TAG = "simple_ota";
 
-/* Binary semaphore to signal when we are connected to Wi-Fi. */
-static SemaphoreHandle_t s_wifi_connected;
+/* FreeRTOS event group to signal when we are connected to Wi-Fi. */
+static EventGroupHandle_t s_wifi_event_group;
+#define WIFI_CONNECTED_BIT BIT0
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                int32_t event_id, void *event_data)
@@ -35,13 +36,13 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
         ESP_LOGI(TAG, "Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
-        xSemaphoreGive(s_wifi_connected);
+        xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
 }
 
 static void wifi_init_sta(void)
 {
-    s_wifi_connected = xSemaphoreCreateBinary();
+    s_wifi_event_group = xEventGroupCreate();
 
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -73,7 +74,8 @@ static void wifi_init_sta(void)
     ESP_LOGI(TAG, "Connecting to SSID: %s", CONFIG_WIFI_SSID);
 
     /* Wait until we are connected and have an IP address. */
-    xSemaphoreTake(s_wifi_connected, portMAX_DELAY);
+    xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT,
+                        pdFALSE, pdTRUE, portMAX_DELAY);
 }
 
 static void do_firmware_upgrade(void)
@@ -103,6 +105,7 @@ static void do_firmware_upgrade(void)
 
 void app_main(void)
 {
+    /* Print the running firmware version so you can tell v1 from v2. */
     ESP_LOGI(TAG, "\n\n%s\n\n", FIRMWARE_VERSION_MESSAGE);
 
     /* Initialize NVS, required by the Wi-Fi driver. */

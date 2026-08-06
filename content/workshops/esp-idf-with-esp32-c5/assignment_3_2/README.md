@@ -1,13 +1,7 @@
-# Assignment 3.1 - Simple OTA (Over-The-Air) Firmware Update
+# simple-ota
 
-This is the solution code for **Assignment 3.1** of the **ESP-IDF with ESP32-C5**
-workshop. For the full walkthrough, explanations, and screenshots, follow the
-workshop on the Espressif Developer Portal:
-[developer.espressif.com](https://developer.espressif.com).
-
-It is a minimal ESP-IDF example that connects to Wi-Fi and upgrades its own
-firmware over the network using the simplified `esp_https_ota()` interface, so
-you do not need to reflash the board over serial for every new build.
+Minimal ESP-IDF example that connects to Wi-Fi and upgrades its own firmware
+over HTTP using the simplified `esp_https_ota()` interface.
 
 ## What it does
 
@@ -90,6 +84,3 @@ python3 serve_firmware.py
   (not `localhost`).
 - OTA over plain HTTP requires `CONFIG_ESP_HTTPS_OTA_ALLOW_HTTP=y`, already
   set in [sdkconfig.defaults](sdkconfig.defaults).
-- This is workshop material meant for local testing. Serving firmware over
-  plain HTTP is not suitable for production; real deployments should use HTTPS
-  and signed firmware.
