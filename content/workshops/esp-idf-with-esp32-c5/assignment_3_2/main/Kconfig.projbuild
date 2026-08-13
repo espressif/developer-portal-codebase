@@ -18,4 +18,12 @@ menu "Simple OTA Configuration"
         help
             URL of the firmware.bin served by your local HTTP server.
 
+    config FIRMWARE_VERSION_URL
+        string "Firmware version URL"
+        default "http://192.168.1.100:8070/version.json"
+        help
+            URL of the version.json served by your local HTTP server. The device
+            queries this first and only performs the OTA when the advertised
+            version differs from its own FIRMWARE_VERSION_MESSAGE.
+
 endmenu

@@ -7,8 +7,12 @@ over HTTP using the simplified `esp_https_ota()` interface.
 
 1. Connects to the Wi-Fi network configured via `menuconfig` (SSID/password).
 2. Prints the running firmware version (e.g. `Hello world v1`).
-3. Downloads `firmware.bin` from the configured URL and logs `OTA started`.
-4. On success, logs `OTA ended successfully` and reboots into the new firmware,
+3. Queries `version.json` from the server and compares the advertised version
+   with its own `FIRMWARE_VERSION_MESSAGE`.
+4. If the versions match, it logs that it already runs the latest firmware and
+   skips the upgrade. Otherwise it downloads `firmware.bin` from the configured
+   URL and logs `OTA started`.
+5. On success, logs `OTA ended successfully` and reboots into the new firmware,
    which then prints its own version string (e.g. `Hello world v2`).
 
 ## Firmware setup
@@ -17,9 +21,10 @@ over HTTP using the simplified `esp_https_ota()` interface.
    ```
    idf.py menuconfig
    ```
-   Under **Simple OTA Configuration**, set `WIFI_SSID`, `WIFI_PASSWORD`, and
+   Under **Simple OTA Configuration**, set `WIFI_SSID`, `WIFI_PASSWORD`,
    `FIRMWARE_UPGRADE_URL` (e.g. `http://192.168.1.100:8070/firmware.bin`,
-   using the IP address of the machine running the server below).
+   using the IP address of the machine running the server below), and
+   `FIRMWARE_VERSION_URL` (e.g. `http://192.168.1.100:8070/version.json`).
 
 2. Build and flash the first version (with `FIRMWARE_VERSION_MESSAGE` in
    [main/main.c](main/main.c) left as `"Hello world v1"`):
@@ -37,7 +42,10 @@ over HTTP using the simplified `esp_https_ota()` interface.
 ## Serving the firmware
 
 [serve_firmware.py](serve_firmware.py) serves `build/simple-ota.bin` at
-`/firmware.bin` over plain HTTP, matching `FIRMWARE_UPGRADE_URL`.
+`/firmware.bin` over plain HTTP, matching `FIRMWARE_UPGRADE_URL`. It also serves
+`/version.json`, describing the version of the served firmware (read from
+`FIRMWARE_VERSION_MESSAGE` in [main/main.c](main/main.c)), matching
+`FIRMWARE_VERSION_URL`.
 
 It only uses the Python standard library and is runnable directly with
 [uv](https://docs.astral.sh/uv/):
@@ -78,9 +86,10 @@ python3 serve_firmware.py
 
 ## Notes
 
-- The server only responds to `GET /firmware.bin`; any other path returns 404.
+- The server responds to `GET /firmware.bin` and `GET /version.json`; any other
+  path returns 404.
 - Make sure the device and the machine running the server are on the same
-  network, and that `FIRMWARE_UPGRADE_URL` uses the server machine's IP
-  (not `localhost`).
+  network, and that `FIRMWARE_UPGRADE_URL` and `FIRMWARE_VERSION_URL` use the
+  server machine's IP (not `localhost`).
 - OTA over plain HTTP requires `CONFIG_ESP_HTTPS_OTA_ALLOW_HTTP=y`, already
   set in [sdkconfig.defaults](sdkconfig.defaults).

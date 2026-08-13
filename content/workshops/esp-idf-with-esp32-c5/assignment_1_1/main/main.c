@@ -72,9 +72,6 @@ void app_main(void)
                                                         NULL,
                                                         &instance_got_ip));
 
-    // Set band mode to AUTO (scans both 2.4 GHz and 5 GHz)
-    ESP_ERROR_CHECK(esp_wifi_set_band_mode(WIFI_BAND_MODE_AUTO));
-
     // Configure station
     wifi_config_t wifi_config = {
         .sta = {
@@ -86,6 +83,11 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
+
+    // Set band mode to AUTO (scans both 2.4 GHz and 5 GHz).
+    // Must be called after esp_wifi_start(), otherwise it returns
+    // ESP_ERR_WIFI_NOT_STARTED (0x3002).
+    ESP_ERROR_CHECK(esp_wifi_set_band_mode(WIFI_BAND_MODE_AUTO));
 
     // Wait for connection or failure
     EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
