@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdbool.h>
 #include <string.h>
 
 #include "freertos/FreeRTOS.h"
@@ -14,12 +13,11 @@
 
 #include "esp_https_ota.h"
 #include "esp_http_client.h"
-#include "cJSON.h"
 
 /* Change this string to tell firmware versions apart (e.g. "Hello world v1"
  * on the running firmware and "Hello world v2" on the firmware you serve). */
 
-#define FIRMWARE_VERSION_MESSAGE "Hello world v1.3"
+#define FIRMWARE_VERSION_MESSAGE "Hello world v1.1"
 
 static const char *TAG = "simple_ota";
 
@@ -78,54 +76,6 @@ static void wifi_init_sta(void)
     xSemaphoreTake(s_wifi_connected, portMAX_DELAY);
 }
 
-static bool remote_version_matches(void)
-{
-    ESP_LOGI(TAG, "Checking firmware version at: %s", CONFIG_FIRMWARE_VERSION_URL);
-
-    esp_http_client_config_t config = {
-        .url = CONFIG_FIRMWARE_VERSION_URL,
-        .timeout_ms = 5000,
-    };
-    esp_http_client_handle_t client = esp_http_client_init(&config);
-
-    esp_err_t err = esp_http_client_open(client, 0);
-    if (err != ESP_OK) {
-        ESP_LOGW(TAG, "Failed to query version: %s", esp_err_to_name(err));
-        esp_http_client_cleanup(client);
-        return false;
-    }
-
-    esp_http_client_fetch_headers(client);
-
-    char buffer[256];
-    int len = esp_http_client_read_response(client, buffer, sizeof(buffer) - 1);
-    esp_http_client_close(client);
-    esp_http_client_cleanup(client);
-
-    if (len <= 0) {
-        ESP_LOGW(TAG, "Empty version response");
-        return false;
-    }
-    buffer[len] = '\0';
-
-    cJSON *root = cJSON_Parse(buffer);
-    if (root == NULL) {
-        ESP_LOGW(TAG, "Invalid version JSON: %s", buffer);
-        return false;
-    }
-
-    bool matches = false;
-    cJSON *version = cJSON_GetObjectItem(root, "version");
-    if (cJSON_IsString(version) && version->valuestring != NULL) {
-        ESP_LOGI(TAG, "Available firmware version: %s", version->valuestring);
-        matches = (strcmp(version->valuestring, FIRMWARE_VERSION_MESSAGE) == 0);
-    } else {
-        ESP_LOGW(TAG, "Version field missing in response");
-    }
-    cJSON_Delete(root);
-    return matches;
-}
-
 static void do_firmware_upgrade(void)
 {
     ESP_LOGI(TAG, "OTA started");
@@ -165,13 +115,6 @@ void app_main(void)
 
     wifi_init_sta();
 
-    if (remote_version_matches()) {
-        ESP_LOGI(TAG, "Already running the latest firmware (%s), skipping OTA",
-                 FIRMWARE_VERSION_MESSAGE);
-    } else {
-        do_firmware_upgrade();
-    }
-    ESP_LOGI(TAG, "\n\n%s\n\n", FIRMWARE_VERSION_MESSAGE);
-    vTaskDelay(10000);
+    do_firmware_upgrade();
     esp_restart();
 }
