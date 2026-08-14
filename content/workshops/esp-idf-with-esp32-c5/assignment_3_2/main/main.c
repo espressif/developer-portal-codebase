@@ -1,68 +1,62 @@
-#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
+#include "esp_event.h"
+#include "esp_log.h"
+#include "esp_netif.h"
+#include "esp_wifi.h"
+#include "esp_http_client.h"
+#include "esp_https_ota.h"
+#include "esp_crt_bundle.h"
+#include "nvs_flash.h"
+#include "cJSON.h"
 #include <string.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/semphr.h"
+#define WIFI_SSID     "FrancescoHotspot"
+#define WIFI_PASSWORD "ciaociao"
 
-#include "esp_log.h"
-#include "esp_wifi.h"
-#include "esp_event.h"
-#include "esp_netif.h"
-#include "nvs_flash.h"
+#define FIRMWARE_URL "https://raw.githubusercontent.com/espressif/developer-portal-codebase/update-workshop-to-c5-code/content/workshops/esp-idf-with-esp32-c5/ota/ota-new-firmware.bin"
+#define FIRMWARE_VERSION_URL "https://raw.githubusercontent.com/espressif/developer-portal-codebase/update-workshop-to-c5-code/content/workshops/esp-idf-with-esp32-c5/ota/ota-new-firmware.json"
 
-#include "esp_https_ota.h"
-#include "esp_http_client.h"
+#define CURRENT_FIRMWARE_VERSION "3.0.0"
 
-/* Change this string to tell firmware versions apart (e.g. "Hello world v1"
- * on the running firmware and "Hello world v2" on the firmware you serve). */
+static const char *TAG = "ota_version_example";
 
-#define FIRMWARE_VERSION_MESSAGE "Hello world v1.1"
-
-static const char *TAG = "simple_ota";
-
-/* Binary semaphore to signal when we are connected to Wi-Fi. */
-static SemaphoreHandle_t s_wifi_connected;
+static EventGroupHandle_t s_wifi_event_group;
+#define WIFI_CONNECTED_BIT BIT0
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
-                               int32_t event_id, void *event_data)
+                                int32_t event_id, void *event_data)
 {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        ESP_LOGW(TAG, "Wi-Fi disconnected, retrying...");
+        ESP_LOGI(TAG, "Disconnected from AP, retrying...");
         esp_wifi_connect();
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
+        ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
         ESP_LOGI(TAG, "Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
-        xSemaphoreGive(s_wifi_connected);
+        xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
 }
 
-static void wifi_init_sta(void)
+static void wifi_connect(void)
 {
-    s_wifi_connected = xSemaphoreCreateBinary();
+    s_wifi_event_group = xEventGroupCreate();
 
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     esp_netif_create_default_wifi_sta();
 
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+    wifi_init_config_t wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&wifi_init_cfg));
 
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
-                                                        ESP_EVENT_ANY_ID,
-                                                        &wifi_event_handler,
-                                                        NULL, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
-                                                        IP_EVENT_STA_GOT_IP,
-                                                        &wifi_event_handler,
-                                                        NULL, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL));
 
     wifi_config_t wifi_config = {
         .sta = {
-            .ssid = CONFIG_WIFI_SSID,
-            .password = CONFIG_WIFI_PASSWORD,
+            .ssid = WIFI_SSID,
+            .password = WIFI_PASSWORD,
         },
     };
 
@@ -70,51 +64,98 @@ static void wifi_init_sta(void)
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGI(TAG, "Connecting to SSID: %s", CONFIG_WIFI_SSID);
-
-    /* Wait until we are connected and have an IP address. */
-    xSemaphoreTake(s_wifi_connected, portMAX_DELAY);
+    ESP_LOGI(TAG, "Connecting to SSID: %s", WIFI_SSID);
+    xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
 }
 
-static void do_firmware_upgrade(void)
+static void do_firmware_update(void)
 {
-    ESP_LOGI(TAG, "OTA started");
-    ESP_LOGI(TAG, "Downloading firmware from: %s", CONFIG_FIRMWARE_UPGRADE_URL);
+    ESP_LOGI(TAG, "Starting OTA update from %s", FIRMWARE_URL);
 
     esp_http_client_config_t http_config = {
-        .url = CONFIG_FIRMWARE_UPGRADE_URL,
-        .keep_alive_enable = true,
+        .url = FIRMWARE_URL,
+        .crt_bundle_attach = esp_crt_bundle_attach,
     };
 
     esp_https_ota_config_t ota_config = {
         .http_config = &http_config,
     };
 
-    /* Simplified esp_https_ota interface: downloads, writes and validates
-     * the new firmware in a single blocking call. */
     esp_err_t ret = esp_https_ota(&ota_config);
-
     if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "OTA ended successfully!");
+        ESP_LOGI(TAG, "OTA update successful, rebooting...");
+        vTaskDelay(pdMS_TO_TICKS(2000));
+        esp_restart();
     } else {
-        ESP_LOGE(TAG, "OTA ended with error: %s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "OTA update failed: %s", esp_err_to_name(ret));
     }
+}
+
+static bool fetch_remote_version(char *version_buf, size_t buf_len)
+{
+    char response_buf[128] = {0};
+
+    esp_http_client_config_t http_config = {
+        .url = FIRMWARE_VERSION_URL,
+        .crt_bundle_attach = esp_crt_bundle_attach,
+    };
+
+    esp_http_client_handle_t client = esp_http_client_init(&http_config);
+    esp_err_t err = esp_http_client_open(client, 0);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to open connection to %s: %s", FIRMWARE_VERSION_URL, esp_err_to_name(err));
+        esp_http_client_cleanup(client);
+        return false;
+    }
+
+    esp_http_client_fetch_headers(client);
+    int read_len = esp_http_client_read(client, response_buf, sizeof(response_buf) - 1);
+    esp_http_client_close(client);
+    esp_http_client_cleanup(client);
+
+    if (read_len <= 0) {
+        ESP_LOGE(TAG, "Failed to read version file");
+        return false;
+    }
+    response_buf[read_len] = '\0';
+
+    cJSON *json = cJSON_Parse(response_buf);
+    if (json == NULL) {
+        ESP_LOGE(TAG, "Failed to parse version JSON: %s", response_buf);
+        return false;
+    }
+
+    cJSON *version_item = cJSON_GetObjectItem(json, "version");
+    if (!cJSON_IsString(version_item)) {
+        ESP_LOGE(TAG, "Missing \"version\" field in %s", FIRMWARE_VERSION_URL);
+        cJSON_Delete(json);
+        return false;
+    }
+
+    strncpy(version_buf, version_item->valuestring, buf_len - 1);
+    version_buf[buf_len - 1] = '\0';
+
+    cJSON_Delete(json);
+    return true;
 }
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "\n\n%s\n\n", FIRMWARE_VERSION_MESSAGE);
+    ESP_ERROR_CHECK(nvs_flash_init());
+    wifi_connect();
 
-    /* Initialize NVS, required by the Wi-Fi driver. */
-    esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ret = nvs_flash_init();
+    char remote_version[32];
+    if (!fetch_remote_version(remote_version, sizeof(remote_version))) {
+        ESP_LOGE(TAG, "Could not retrieve remote firmware version, skipping update");
+        return;
     }
-    ESP_ERROR_CHECK(ret);
 
-    wifi_init_sta();
+    ESP_LOGI(TAG, "Running version: %s, remote version: %s", CURRENT_FIRMWARE_VERSION, remote_version);
 
-    do_firmware_upgrade();
-    esp_restart();
+    if (strcmp(remote_version, CURRENT_FIRMWARE_VERSION) != 0) {
+        ESP_LOGI(TAG, "New firmware available, starting OTA update");
+        do_firmware_update();
+    } else {
+        ESP_LOGI(TAG, "Already running the latest firmware, nothing to do");
+    }
 }
