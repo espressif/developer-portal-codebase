@@ -84,10 +84,10 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    // Set band mode to AUTO (scans both 2.4 GHz and 5 GHz).
+    // Force 5 GHz only: the station will scan and connect on 5 GHz channels exclusively.
     // Must be called after esp_wifi_start(), otherwise it returns
     // ESP_ERR_WIFI_NOT_STARTED (0x3002).
-    ESP_ERROR_CHECK(esp_wifi_set_band_mode(WIFI_BAND_MODE_AUTO));
+    ESP_ERROR_CHECK(esp_wifi_set_band_mode(WIFI_BAND_MODE_5G_ONLY));
 
     // Wait for connection or failure
     EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
