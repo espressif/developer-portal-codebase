@@ -66,6 +66,9 @@ env/
 .ccls-cache/
 compile_commands.json
 
+# Development containers
+.devcontainer/
+
 # Windows specific
 Thumbs.db
 ehthumbs.db
