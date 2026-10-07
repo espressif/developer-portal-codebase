@@ -13,8 +13,7 @@ menu "LP-Core Pulse Counter Demo"
         range 10 60000
         default 1000
         help
-            Time between LP timer wakeups. Each wakeup is counted as one
-            simulated button press.
+            Time between LP timer counts and GPIO marker pulses.
 
     config DEMO_PULSES_PER_WAKEUP
         int "Pulses required to wake the HP core"
@@ -22,5 +21,21 @@ menu "LP-Core Pulse Counter Demo"
         default 30
         help
             The LP core wakes the HP core after counting this many pulses.
+
+    config DEMO_TRACE_GPIO
+        int "GPIO for LP pulse tracing"
+        range 0 7
+        default 4
+        help
+            RTC GPIO driven high briefly after every LP count.
+            GPIO4 is exposed as J2 pin 32 on the Function-CoreBoard-1.
+
+    config DEMO_TRACE_PULSE_WIDTH_MS
+        int "GPIO trace pulse width (ms)"
+        range 1 100
+        default 1
+        help
+            GPIO remains low between counts and goes high for this duration
+            whenever an LP count occurs.
 
 endmenu

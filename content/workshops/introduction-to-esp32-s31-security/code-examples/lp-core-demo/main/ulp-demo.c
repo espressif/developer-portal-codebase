@@ -9,6 +9,8 @@
 #include "esp_netif.h"
 #include "esp_sleep.h"
 #include "esp_wifi.h"
+#include "driver/gpio.h"
+#include "driver/rtc_io.h"
 #include "freertos/event_groups.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -175,14 +177,17 @@ static void start_lp_core(void)
     ESP_LOGI(TAG, "LP-core firmware loaded into retained LP memory");
 
     ulp_lp_core_cfg_t cfg = {
-        .wakeup_source = ULP_LP_CORE_WAKEUP_SOURCE_LP_TIMER,
-        .lp_timer_sleep_duration_us = CONFIG_DEMO_PULSE_INTERVAL_MS * 1000,
+        .wakeup_source = ULP_LP_CORE_WAKEUP_SOURCE_HP_CPU,
     };
-    ESP_LOGI(TAG, "Starting LP core with a %d ms timer",
+    ESP_LOGI(TAG, "Starting LP core with a %d ms pulse interval",
              CONFIG_DEMO_PULSE_INTERVAL_MS);
     ESP_ERROR_CHECK(ulp_lp_core_run(&cfg));
-    ESP_LOGI(PROFILE_TAG, "STAGE=LP_STARTED PULSE_INTERVAL_MS=%d",
-             CONFIG_DEMO_PULSE_INTERVAL_MS);
+    ESP_LOGI(PROFILE_TAG,
+             "STAGE=LP_STARTED PULSE_INTERVAL_MS=%d TRACE_GPIO=%d"
+             " TRACE_WIDTH_MS=%d",
+             CONFIG_DEMO_PULSE_INTERVAL_MS,
+             CONFIG_DEMO_TRACE_GPIO,
+             CONFIG_DEMO_TRACE_PULSE_WIDTH_MS);
     ESP_LOGI(TAG, "LP core started successfully");
 }
 
@@ -221,9 +226,23 @@ void app_main(void)
                  ulp_hp_wakeup_count);
     } else {
         ESP_LOGI(TAG, "[HP stage 2/4] Cold boot: initializing LP core");
-        ESP_LOGI(TAG, "Pulse interval=%d ms, wake threshold=%d pulses",
+        ESP_LOGI(TAG, "Pulse interval=%d ms, wake threshold=%d pulses, trace GPIO=%d",
                  CONFIG_DEMO_PULSE_INTERVAL_MS,
-                 CONFIG_DEMO_PULSES_PER_WAKEUP);
+                 CONFIG_DEMO_PULSES_PER_WAKEUP,
+                 CONFIG_DEMO_TRACE_GPIO);
+
+        ESP_ERROR_CHECK(rtc_gpio_init(CONFIG_DEMO_TRACE_GPIO));
+        ESP_ERROR_CHECK(rtc_gpio_set_direction(CONFIG_DEMO_TRACE_GPIO,
+                                               RTC_GPIO_MODE_INPUT_OUTPUT));
+        ESP_ERROR_CHECK(rtc_gpio_pullup_dis(CONFIG_DEMO_TRACE_GPIO));
+        ESP_ERROR_CHECK(rtc_gpio_pulldown_dis(CONFIG_DEMO_TRACE_GPIO));
+        ESP_ERROR_CHECK(rtc_gpio_hold_dis(CONFIG_DEMO_TRACE_GPIO));
+        ESP_ERROR_CHECK(rtc_gpio_set_level(CONFIG_DEMO_TRACE_GPIO, 0));
+        ESP_ERROR_CHECK(gpio_sleep_sel_dis(CONFIG_DEMO_TRACE_GPIO));
+        ESP_LOGI(PROFILE_TAG, "STAGE=TRACE_READY GPIO=%d PULSE_WIDTH_MS=%d",
+                 CONFIG_DEMO_TRACE_GPIO,
+                 CONFIG_DEMO_TRACE_PULSE_WIDTH_MS);
+
         run_wifi_power_demo();
         run_hp_power_demo();
         start_lp_core();
@@ -231,8 +250,27 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[HP stage 3/4] Enabling LP-core wakeup source");
     ESP_ERROR_CHECK(esp_sleep_enable_ulp_wakeup());
-    ESP_LOGI(PROFILE_TAG, "STAGE=DEEP_SLEEP_ENTER WAKE_AFTER_PULSES=%d",
-             CONFIG_DEMO_PULSES_PER_WAKEUP);
+    /*
+     * Keep the RTC peripheral and RTC IO path powered so LP-core GPIO pulses
+     * remain visible while the HP domain is in deep sleep.
+     */
+    ESP_ERROR_CHECK(esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH,
+                                        ESP_PD_OPTION_ON));
+    ESP_LOGI(PROFILE_TAG, "STAGE=RTC_PERIPH_ON FOR_LP_GPIO=1");
+
+    if (lp_core_wakeup) {
+        ESP_LOGI(PROFILE_TAG, "STAGE=LP_RESUME_REQUEST");
+        ESP_LOGI(TAG, "Resuming LP pulse timer before HP enters deep sleep");
+        ulp_lp_core_sw_intr_trigger();
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+
+    ESP_LOGI(PROFILE_TAG,
+             "STAGE=DEEP_SLEEP_ENTER WAKE_AFTER_PULSES=%d"
+             " TRACE_GPIO=%d TRACE_WIDTH_MS=%d",
+             CONFIG_DEMO_PULSES_PER_WAKEUP,
+             CONFIG_DEMO_TRACE_GPIO,
+             CONFIG_DEMO_TRACE_PULSE_WIDTH_MS);
     ESP_LOGI(TAG, "[HP stage 4/4] Entering deep sleep; LP core is now in control");
     fflush(stdout);
     vTaskDelay(pdMS_TO_TICKS(100));

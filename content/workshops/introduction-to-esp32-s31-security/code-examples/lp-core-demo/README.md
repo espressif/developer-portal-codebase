@@ -7,8 +7,8 @@ another 10 seconds, and then starts the LP core. An LP timer event represents
 a simulated button press. The LP core counts the events in retained LP memory
 and wakes the HP core after 30 pulses.
 
-The LP core halts between timer events instead of using a delay loop, keeping
-the low-power interval suitable for current measurement.
+The LP core waits for timer interrupts using `WFI` instead of a delay loop,
+keeping the low-power interval suitable for current measurement.
 
 ## Demo scenario
 
@@ -88,7 +88,7 @@ Expected output:
 ```text
 hp_core: [HP stage 1/4] HP core booted
 hp_core: [HP stage 2/4] Cold boot: initializing LP core
-hp_core: Pulse interval=1000 ms, wake threshold=30 pulses
+hp_core: Pulse interval=1000 ms, wake threshold=30 pulses, trace GPIO=4
 hp_core: [Wi-Fi stage 1/5] Initializing station
 hp_core: [Wi-Fi stage 3/5] Connected, IP address: 192.0.2.1
 hp_core: [Wi-Fi stage 4/5] Holding connection for 10 seconds
@@ -118,6 +118,29 @@ format `STAGE=<name>`. They identify application start, Wi-Fi connection and
 hold, Wi-Fi shutdown, HP-only hold, LP-core startup, deep-sleep entry, LP
 wakeup, and the reported pulse totals.
 
+## LP-core pulse trace
+
+During the low-power phase, GPIO4 stays low. After every internal count, the
+LP core drives GPIO4 high for 1 ms and then returns it low. One marker pulse
+is emitted every second, and the HP core wakes after 30 pulses.
+
+Connect a logic-analyzer input to GPIO4 (**J2 pin 32**, labeled `4`) and its
+ground to a board ground pin. Configure the analyzer for 3.3 V logic.
+
+GPIO4 is driven only by the LP core. The LP core waits in `WFI` between timer
+interrupts without busy-waiting. The first pulse occurs one second after the
+`STAGE=DEEP_SLEEP_ENTER` log.
+
+After the 30th pulse, the LP core pauses its timer before waking HP, so no
+GPIO pulses are generated while HP is awake. Immediately before returning to
+deep sleep, HP sends a software interrupt to the LP core to rearm the timer.
+The next pulse occurs one second after HP enters deep sleep.
+
+The RTC peripheral domain is forced on during deep sleep so every LP-generated
+GPIO pulse reaches the pad. This makes the trace observable but increases the
+measured low-power current compared with leaving that domain in automatic
+power-down mode.
+
 ## Configuration
 
 Run `idf.py menuconfig` and open **LP-Core Pulse Counter Demo** to change:
@@ -125,6 +148,8 @@ Run `idf.py menuconfig` and open **LP-Core Pulse Counter Demo** to change:
 - HP-only measurement interval
 - Simulated pulse interval
 - Number of pulses required to wake the HP core
+- RTC GPIO used for pulse tracing
+- GPIO trace pulse width
 
 ## Current measurement
 
