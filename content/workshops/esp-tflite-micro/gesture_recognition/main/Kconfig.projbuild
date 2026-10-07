@@ -1,0 +1,70 @@
+menu "Motion Estimation"
+
+    orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
+
+    config IMU_I2C_SCL
+        int "Imu I2C SCL"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 3 if IDF_TARGET_ESP32C5
+        help
+            Used to connect to IMU SCL pin.
+
+    config IMU_I2C_SDA
+        int "Imu I2C SDA"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 2 if IDF_TARGET_ESP32C5
+        help
+            Used to connect to IMU SDA pin.
+
+    config IMU_SDO_PIN
+        int "Imu SDO PIN"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 9 if IDF_TARGET_ESP32C5
+        help
+            I2C Address bit-0 select in I2C Mode.
+
+    config SAMPLE_INTERVAL_MS
+        int "Sample Interval MS"
+        range 1 10
+        default 5
+        help
+            Used to control the sampling frequency of the IMU angular velocity.
+
+    config NUM_SAMPLES
+        int "Num Samples"
+        range 100 400
+        default 200
+        help
+            Used to control the number of IMU angular velocity sampling points.
+
+    config TRIGGER_THRESHOLD
+        int "Trigger Threshold (|gx|+|gy|+|gz|)"
+        range 1 6000
+        default 100
+        help
+            Sum of absolute gyro values (dps) to trigger data capture. Data collection starts when |gx|+|gy|+|gz| exceeds this value.
+
+    config SLIDING_WINDOW_STEP
+        int "Sliding Window Step (samples)"
+        range 1 50
+        default 30
+        help
+            Number of samples to skip between each inference in sliding window mode. 
+            Smaller value = more frequent inference but higher CPU usage.
+
+    config INFERENCE_CONFIDENCE_THRESHOLD
+        int "Inference Confidence Threshold (%)"
+        range 0 100
+        default 85
+        help
+            Minimum confidence percentage to report inference result. 
+            Results below this threshold will be ignored.
+
+    config CONTROL_BUTTON
+        int "Control Button"
+        default 28 if IDF_TARGET_ESP32C5
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        help
+            Used for manually triggering data acquisition or function switching. 
+
+endmenu
