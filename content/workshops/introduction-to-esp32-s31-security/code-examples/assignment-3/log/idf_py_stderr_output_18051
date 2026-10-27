@@ -1,3 +1,0 @@
-Command: /Users/pedrominatel/.espressif/python_env/idf6.1_py3.14_env/bin/python -m espsecure generate-signing-key --version 1 --scheme rsa3072 secure_boot_signing_key.pem
-ERROR: 
-A fatal error occurred: ERROR: V1 only supports ECDSA256.
