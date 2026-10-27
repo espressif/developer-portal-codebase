@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO LTD
+# SPDX-License-Identifier: Apache-2.0
+
+/build/
+/sdkconfig
+/sdkconfig.old
+/secure_boot_signing_key.pem
+/*.efuse
+/*-flash.bin
+/*.bin
+/managed_components/
+/dependencies.lock

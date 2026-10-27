@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO LTD
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Workshop OTA"
+
+    config WORKSHOP_OTA_URL
+        string "Firmware upgrade URL"
+        default "https://192.168.4.1:8070/firmware.bin"
+        help
+            HTTPS URL of the signed application image served by the OTA server.
+            The host must match the subjectAltName in server_certs/ca_cert.pem.
+
+    config WORKSHOP_OTA_FAIL_SELF_TEST
+        bool "Simulate a failed self-test after an update"
+        default n
+        help
+            When enabled, a freshly updated image reports a failed self-test and
+            asks the bootloader to roll back to the previous image. Use it only to
+            build a deliberately bad update for the rollback test.
+
+endmenu

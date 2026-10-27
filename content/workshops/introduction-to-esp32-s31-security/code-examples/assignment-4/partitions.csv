@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO LTD
+# SPDX-License-Identifier: Apache-2.0
+# Name,   Type, SubType,  Offset,   Size,     Flags
+nvs,      data, nvs,      0x11000,  0x6000,
+otadata,  data, ota,      0x17000,  0x2000,
+phy_init, data, phy,      0x19000,  0x1000,
+storage,  data, 0xff,     0x1A000,  0x1000,   encrypted
+nvs_keys, data, nvs_keys, 0x1B000,  0x1000,   encrypted
+ota_0,    app,  ota_0,    0x20000,  0x1C0000,
+ota_1,    app,  ota_1,    0x1E0000, 0x1C0000,
