@@ -16,16 +16,16 @@
 #include "app_model.h"
 
 static const char *TAG = "APP_MODEL";
-static const char *kLabels[] = {
-    "Counterclockwise circle",
-    "V",
-    "Unknown",
-    "Rotate",
-};
+static const char *kLabels[] = { "Counterclockwise circle", "V", "Unknown" };
 
 // TensorFlow Lite model related
+constexpr int kExpectedSamples = 200;
+constexpr int kExpectedAxes = 3;
 constexpr int kTensorArenaSize = 50000;
-uint8_t tensor_arena[kTensorArenaSize];
+constexpr size_t kLabelCount = sizeof(kLabels) / sizeof(kLabels[0]);
+static_assert(CONFIG_NUM_SAMPLES == kExpectedSamples,
+              "The model requires CONFIG_NUM_SAMPLES=200");
+alignas(16) uint8_t tensor_arena[kTensorArenaSize];
 tflite::MicroInterpreter *interpreter = nullptr;
 TfLiteTensor *input = nullptr;
 TfLiteTensor *output = nullptr;
@@ -93,8 +93,32 @@ void app_model_init()
         return;
     }
 
-    input = interpreter->input(0);
-    output = interpreter->output(0);
+    TfLiteTensor *model_input = interpreter->input(0);
+    TfLiteTensor *model_output = interpreter->output(0);
+    if (model_input == nullptr || model_input->type != kTfLiteFloat32 ||
+        model_input->dims == nullptr || model_input->dims->size != 3 ||
+        model_input->dims->data[0] != 1 ||
+        model_input->dims->data[1] != kExpectedSamples ||
+        model_input->dims->data[2] != kExpectedAxes) {
+        ESP_LOGE(TAG, "Expected float32 input tensor [1,%d,%d]",
+                 kExpectedSamples, kExpectedAxes);
+        return;
+    }
+
+    if (model_output == nullptr || model_output->type != kTfLiteFloat32 ||
+        model_output->dims == nullptr || model_output->dims->size != 2 ||
+        model_output->dims->data[0] != 1 ||
+        model_output->dims->data[1] != static_cast<int>(kLabelCount)) {
+        ESP_LOGE(TAG, "Model output count must match %u labels",
+                 static_cast<unsigned>(kLabelCount));
+        return;
+    }
+
+    input = model_input;
+    output = model_output;
+    ESP_LOGI(TAG, "Model ready: input [1,%d,%d], %u classes",
+             kExpectedSamples, kExpectedAxes,
+             static_cast<unsigned>(kLabelCount));
 }
 
 bool app_model_predict(float (*imu_data)[3], size_t num_samples, app_model_result_t *result)
@@ -104,8 +128,22 @@ bool app_model_predict(float (*imu_data)[3], size_t num_samples, app_model_resul
         return false;
     }
 
+    if (imu_data == nullptr || num_samples != kExpectedSamples) {
+        ESP_LOGE(TAG, "Expected %d IMU samples, received %u",
+                 kExpectedSamples, static_cast<unsigned>(num_samples));
+        return false;
+    }
+
+    const size_t input_bytes = num_samples * kExpectedAxes * sizeof(float);
+    if (input_bytes != input->bytes) {
+        ESP_LOGE(TAG, "Input byte count mismatch: expected %u, received %u",
+                 static_cast<unsigned>(input->bytes),
+                 static_cast<unsigned>(input_bytes));
+        return false;
+    }
+
     // Copy IMU data to input tensor
-    memcpy(input->data.f, imu_data, num_samples * 3 * sizeof(float));
+    memcpy(input->data.f, imu_data, input_bytes);
 
     // Run inference
     TfLiteStatus invoke_status = interpreter->Invoke();
@@ -117,6 +155,10 @@ bool app_model_predict(float (*imu_data)[3], size_t num_samples, app_model_resul
     // Get output tensor
     float *output_data = output->data.f;
     int num_classes = output->dims->data[1];
+    if (output_data == nullptr || num_classes != static_cast<int>(kLabelCount)) {
+        ESP_LOGE(TAG, "Invalid output tensor");
+        return false;
+    }
 
     // Find class with maximum probability
     int pred_idx = 0;

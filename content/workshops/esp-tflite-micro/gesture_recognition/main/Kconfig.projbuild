@@ -32,10 +32,13 @@ menu "Motion Estimation"
 
     config NUM_SAMPLES
         int "Num Samples"
-        range 100 400
+        range 200 200
         default 200
         help
-            Used to control the number of IMU angular velocity sampling points.
+            Number of IMU angular velocity samples. The workshop model has a
+            fixed input shape of 200 time steps by 3 gyroscope axes, so this
+            value must remain 200 unless the model is retrained and the
+            firmware input contract is updated.
 
     config TRIGGER_THRESHOLD
         int "Trigger Threshold (|gx|+|gy|+|gz|)"
