@@ -162,4 +162,3 @@ if __name__ == "__main__":
     # plot_training_curves(history)
 
     save_model_h5(model, "simple_1dcnn_model.h5")
-    
