@@ -1,5 +1,7 @@
 # ESP-TFLite-Micro gesture recognition workshop
 
+> **Snapshot:** Assignment 2 completed. It includes all four datasets and the trained `training/simple_1dcnn_model.h5`.
+
 This project accompanies the ESP-TFLite-Micro workshop. It runs on the
 ESP-SensairShuttle (ESP32-C5 + BMI270) and follows the workshop from data
 collection through four-class on-device inference.

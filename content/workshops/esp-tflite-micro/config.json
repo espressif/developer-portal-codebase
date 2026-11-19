@@ -1,0 +1,14 @@
+{
+  "title": "ESP-TFLite-Micro and ESP32-C5 Workshop",
+  "welcome": "welcome.md",
+  "examples": "Workshop",
+  "start": "builtin/workshop",
+  "settings": {
+    "fixed": {
+      "idfweb.idf.release": "v6.1",
+      "idfweb.targets.visible": ["esp32c5"],
+      "idfweb.targets.default": "esp32c5",
+      "idfweb.welcome.folders": false
+    }
+  }
+}
