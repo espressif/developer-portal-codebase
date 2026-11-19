@@ -1,0 +1,6 @@
+tensorflow==2.20.0
+numpy==2.2.6
+pandas==2.3.3
+scikit-learn==1.7.2
+matplotlib==3.10.7
+pyserial==3.5
